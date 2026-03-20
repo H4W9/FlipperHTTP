@@ -42,10 +42,13 @@ bool FlipperHTTP::loadWiFi()
         strncpy(loaded_pass, password, sizeof(loaded_pass));
 
         // Try to connect
+        if (this->use_led) { this->led.connecting(); }
         if (this->wifi.connect(loaded_ssid, loaded_pass))
         {
+            if (this->use_led) { this->led.connectedReady(); }
             return true;
         }
+        if (this->use_led) { this->led.connectFailed(); }
     }
 
     this->uart->println(F("[ERROR] No networks connected."));
@@ -588,13 +591,16 @@ bool FlipperHTTP::readSerialSettings(String receivedData, bool connectAfterSave)
         }
 
         // Attempt to reconnect with new settings
+        if (this->use_led) { this->led.connecting(); }
         if (this->wifi.connect(loaded_ssid, loaded_pass))
         {
+            if (this->use_led) { this->led.connectedReady(); }
             this->uart->println(F("[SUCCESS] WiFi settings saved and connected."));
             return true;
         }
         else
         {
+            if (this->use_led) { this->led.connectFailed(); }
             this->uart->println(F("[ERROR] WiFi settings saved but failed to connect."));
             return false;
         }
@@ -613,7 +619,7 @@ void FlipperHTTP::loop()
     {
         if (this->use_led)
         {
-            this->led.on();
+            this->led.activity();
         }
 
         // Read the incoming serial data until newline
@@ -637,7 +643,7 @@ void FlipperHTTP::loop()
     {
         if (this->use_led)
         {
-            this->led.on();
+            this->led.activity();
         }
 
         // Read the incoming serial data until newline
@@ -666,7 +672,7 @@ void FlipperHTTP::loop()
 
         if (this->use_led)
         {
-            this->led.on();
+            this->led.activity();
         }
 
         // print the available commands
@@ -713,11 +719,15 @@ void FlipperHTTP::loop()
         // handle [WIFI/IP] command ip of connected wifi
         else if (_data.startsWith("[WIFI/IP]"))
         {
-            if (!this->wifi.isConnected() && !this->wifi.connect(loaded_ssid, loaded_pass))
+            if (!this->wifi.isConnected())
             {
-                this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
-                this->led.off();
-                return;
+                if (this->use_led) { this->led.connecting(); }
+                if (!this->wifi.connect(loaded_ssid, loaded_pass))
+                {
+                    this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
+                    if (this->use_led) { this->led.connectFailed(); } else { this->led.off(); }
+                    return;
+                }
             }
             // Get Request
             String jsonData = this->request("GET", "https://httpbin.org/get");
@@ -766,8 +776,12 @@ void FlipperHTTP::loop()
         // scan for wifi networks
         else if (_data.startsWith("[WIFI/SCAN]"))
         {
+            if (this->use_led) { this->led.scanning(); }
+            String scanResult = this->wifi.scan();
+            // scanDone: true = networks found (result longer than bare empty JSON)
+            if (this->use_led) { this->led.scanDone(scanResult.length() > 15); }
             this->uart->println(F("[GET/SUCCESS]"));
-            this->uart->println(this->wifi.scan());
+            this->uart->println(scanResult);
             this->uart->flush();
             this->uart->println();
             this->uart->println(F("[GET/END]"));
@@ -857,12 +871,15 @@ void FlipperHTTP::loop()
             if (!this->wifi.isConnected())
             {
                 // Attempt to connect to Wifi
+                if (this->use_led) { this->led.connecting(); }
                 if (this->wifi.connect(loaded_ssid, loaded_pass))
                 {
+                    if (this->use_led) { this->led.connectedReady(); }
                     this->uart->println(F("[SUCCESS] Connected to Wifi."));
                 }
                 else
                 {
+                    if (this->use_led) { this->led.connectFailed(); }
                     this->uart->println(F("[ERROR] Failed to connect to Wifi."));
                 }
             }
@@ -875,17 +892,22 @@ void FlipperHTTP::loop()
         else if (_data == "[WIFI/DISCONNECT]")
         {
             this->wifi.disconnect();
+            if (this->use_led) { this->led.disconnected(); }
             this->uart->println(F("[DISCONNECTED] WiFi has been disconnected."));
         }
         // Handle [GET] command
         else if (_data.startsWith("[GET]"))
         {
 
-            if (!this->wifi.isConnected() && !this->wifi.connect(loaded_ssid, loaded_pass))
+            if (!this->wifi.isConnected())
             {
-                this->uart->println(F("[ERROR] Not connected to WiFi. Failed to reconnect."));
-                this->led.off();
-                return;
+                if (this->use_led) { this->led.connecting(); }
+                if (!this->wifi.connect(loaded_ssid, loaded_pass))
+                {
+                    this->uart->println(F("[ERROR] Not connected to WiFi. Failed to reconnect."));
+                    if (this->use_led) { this->led.connectFailed(); } else { this->led.off(); }
+                    return;
+                }
             }
             // Extract URL by removing the command part
             String url = _data.substring(strlen("[GET]"));
@@ -908,11 +930,15 @@ void FlipperHTTP::loop()
         // Handle [GET/HTTP] command
         else if (_data.startsWith("[GET/HTTP]"))
         {
-            if (!this->wifi.isConnected() && !this->wifi.connect(loaded_ssid, loaded_pass))
+            if (!this->wifi.isConnected())
             {
-                this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
-                this->led.off();
-                return;
+                if (this->use_led) { this->led.connecting(); }
+                if (!this->wifi.connect(loaded_ssid, loaded_pass))
+                {
+                    this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
+                    if (this->use_led) { this->led.connectFailed(); } else { this->led.off(); }
+                    return;
+                }
             }
 
             // Extract the JSON by removing the command part
@@ -971,11 +997,15 @@ void FlipperHTTP::loop()
         // Handle [POST/HTTP] command
         else if (_data.startsWith("[POST/HTTP]"))
         {
-            if (!this->wifi.isConnected() && !this->wifi.connect(loaded_ssid, loaded_pass))
+            if (!this->wifi.isConnected())
             {
-                this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
-                this->led.off();
-                return;
+                if (this->use_led) { this->led.connecting(); }
+                if (!this->wifi.connect(loaded_ssid, loaded_pass))
+                {
+                    this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
+                    if (this->use_led) { this->led.connectFailed(); } else { this->led.off(); }
+                    return;
+                }
             }
 
             // Extract the JSON by removing the command part
@@ -1035,11 +1065,15 @@ void FlipperHTTP::loop()
         // Handle [PUT/HTTP] command
         else if (_data.startsWith("[PUT/HTTP]"))
         {
-            if (!this->wifi.isConnected() && !this->wifi.connect(loaded_ssid, loaded_pass))
+            if (!this->wifi.isConnected())
             {
-                this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
-                this->led.off();
-                return;
+                if (this->use_led) { this->led.connecting(); }
+                if (!this->wifi.connect(loaded_ssid, loaded_pass))
+                {
+                    this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
+                    if (this->use_led) { this->led.connectFailed(); } else { this->led.off(); }
+                    return;
+                }
             }
 
             // Extract the JSON by removing the command part
@@ -1099,11 +1133,15 @@ void FlipperHTTP::loop()
         // Handle [DELETE/HTTP] command
         else if (_data.startsWith("[DELETE/HTTP]"))
         {
-            if (!this->wifi.isConnected() && !this->wifi.connect(loaded_ssid, loaded_pass))
+            if (!this->wifi.isConnected())
             {
-                this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
-                this->led.off();
-                return;
+                if (this->use_led) { this->led.connecting(); }
+                if (!this->wifi.connect(loaded_ssid, loaded_pass))
+                {
+                    this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
+                    if (this->use_led) { this->led.connectFailed(); } else { this->led.off(); }
+                    return;
+                }
             }
 
             // Extract the JSON by removing the command part
@@ -1164,11 +1202,15 @@ void FlipperHTTP::loop()
         // Handle [GET/BYTES]
         else if (_data.startsWith("[GET/BYTES]"))
         {
-            if (!this->wifi.isConnected() && !this->wifi.connect(loaded_ssid, loaded_pass))
+            if (!this->wifi.isConnected())
             {
-                this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
-                this->led.off();
-                return;
+                if (this->use_led) { this->led.connecting(); }
+                if (!this->wifi.connect(loaded_ssid, loaded_pass))
+                {
+                    this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
+                    if (this->use_led) { this->led.connectFailed(); } else { this->led.off(); }
+                    return;
+                }
             }
 
             // Extract the JSON by removing the command part
@@ -1219,11 +1261,15 @@ void FlipperHTTP::loop()
         // handle [POST/BYTES]
         else if (_data.startsWith("[POST/BYTES]"))
         {
-            if (!this->wifi.isConnected() && !this->wifi.connect(loaded_ssid, loaded_pass))
+            if (!this->wifi.isConnected())
             {
-                this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
-                this->led.off();
-                return;
+                if (this->use_led) { this->led.connecting(); }
+                if (!this->wifi.connect(loaded_ssid, loaded_pass))
+                {
+                    this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
+                    if (this->use_led) { this->led.connectFailed(); } else { this->led.off(); }
+                    return;
+                }
             }
 
             // Extract the JSON by removing the command part
@@ -1579,6 +1625,11 @@ void FlipperHTTP::loop()
         }
 
         this->led.off();
+    }
+    // Heartbeat pulse: 600 ms green every 30 s while connected
+    if (this->wifi.isConnected() && this->use_led)
+    {
+        this->led.connectedTick();
     }
 #endif
 }

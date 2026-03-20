@@ -34,197 +34,352 @@ constexpr RGB COLOR_GREEN = {0, 255, 0};
 Adafruit_NeoPixel rgbLed(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 #endif
 
+// ── NeoPixel helpers — S3 and C5 only ────────────────────────────────────────
+// Brightness kept low (40/255) to stay within 3V3 budget, matching cyberbrick.
+#if defined(BOARD_ESP32_S3) || defined(BOARD_ESP32_C5)
+constexpr uint8_t NEO_BRIGHT = 40;
+
+static void neoSet(uint8_t r, uint8_t g, uint8_t b)
+{
+#if defined(BOARD_ESP32_S3)
+#ifdef RGB_BUILTIN
+    neopixelWrite(RGB_BUILTIN, r, g, b);
+#endif
+#elif defined(BOARD_ESP32_C5)
+    rgbLed.setPixelColor(0, rgbLed.Color(r, g, b));
+    rgbLed.show();
+#endif
+}
+
+static inline void neoOff()    { neoSet(0,                  0,                  0          ); }
+static inline void neoRed()    { neoSet(NEO_BRIGHT,          0,                  0          ); }
+static inline void neoGreen()  { neoSet(0,                  NEO_BRIGHT,          0          ); }
+static inline void neoBlue()   { neoSet(0,                  0,                  NEO_BRIGHT ); }
+static inline void neoYellow() { neoSet(NEO_BRIGHT,          NEO_BRIGHT / 2,     0          ); }
+static inline void neoWhite()  { neoSet(NEO_BRIGHT,          NEO_BRIGHT,         NEO_BRIGHT ); }
+
+// State for non-blocking connectedTick()
+static uint32_t _conn_last_pulse = 0;
+static bool     _conn_pulsing    = false;
+static uint32_t _conn_pulse_start = 0;
+#endif // BOARD_ESP32_S3 || BOARD_ESP32_C5
+
+// ── blink ─────────────────────────────────────────────────────────────────────
 void LED::blink(int timeout)
 {
 #ifdef BOARD_WIFI_DEV
-    // turn off RED and BLUE
     digitalWrite(6, LED_OFF); // RED
     digitalWrite(4, LED_OFF); // BLUE
-
-    // turn on/off GREEN
-    digitalWrite(5, LED_ON); // GREEN
+    digitalWrite(5, LED_ON);  // GREEN
     delay(timeout);
     digitalWrite(5, LED_OFF); // GREEN
     delay(timeout);
 #elif defined(BOARD_ESP32_C6)
-    // turn on GREEN
     rgbLed.setPixelColor(0, rgbLed.Color(COLOR_GREEN.r, COLOR_GREEN.g, COLOR_GREEN.b));
     rgbLed.show();
     delay(timeout);
-    // turn off GREEN
     rgbLed.setPixelColor(0, rgbLed.Color(COLOR_OFF.r, COLOR_OFF.g, COLOR_OFF.b));
     rgbLed.show();
     delay(timeout);
 #elif defined(BOARD_ESP32_CAM)
-    // turn on GREEN
-    digitalWrite(4, LED_ON); // GREEN
+    digitalWrite(4, LED_ON);
     delay(timeout);
-    // turn off GREEN
-    digitalWrite(4, LED_OFF); // GREEN
+    digitalWrite(4, LED_OFF);
     delay(timeout);
 #elif defined(BOARD_ESP32_S3)
 #ifdef RGB_BUILTIN
-    neopixelWrite(RGB_BUILTIN, 0, RGB_BRIGHTNESS, 0); // Green
+    neopixelWrite(RGB_BUILTIN, 0, RGB_BRIGHTNESS, 0);
     delay(timeout);
-    neopixelWrite(RGB_BUILTIN, 0, 0, 0); // Off / black
+    neopixelWrite(RGB_BUILTIN, 0, 0, 0);
     delay(timeout);
 #endif
 #elif defined(BOARD_ESP32_WROOM)
-    // turn on GREEN
-    digitalWrite(2, LED_ON); // GREEN
+    digitalWrite(2, LED_ON);
     delay(timeout);
-    // turn off GREEN
-    digitalWrite(2, LED_OFF); // GREEN
+    digitalWrite(2, LED_OFF);
     delay(timeout);
 #elif defined(BOARD_ESP32_WROVER)
-    // turn off RED and BLUE
     digitalWrite(6, LED_OFF); // RED
     digitalWrite(4, LED_OFF); // BLUE
-
-    // turn on/off GREEN
-    digitalWrite(5, LED_ON); // GREEN
+    digitalWrite(5, LED_ON);  // GREEN
     delay(timeout);
-    digitalWrite(5, LED_OFF); // GREEN
+    digitalWrite(5, LED_OFF);
     delay(timeout);
 #elif defined(BOARD_PICO_W) || defined(BOARD_PICO_2W) || defined(BOARD_VGM) || defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W)
-    // turn on GREEN
     digitalWrite(LED_BUILTIN, LED_ON);
     delay(timeout);
-    // turn off GREEN
     digitalWrite(LED_BUILTIN, LED_OFF);
     delay(timeout);
 #elif defined(BOARD_ESP32_C3)
-    // turn on GREEN
-    digitalWrite(8, LED_ON); // GREEN
+    digitalWrite(8, LED_ON);
     delay(timeout);
-    // turn off GREEN
-    digitalWrite(8, LED_OFF); // GREEN
+    digitalWrite(8, LED_OFF);
     delay(timeout);
 #elif defined(BOARD_BW16)
-    // turn on GREEN
     digitalWrite(LED_B, LED_ON);
     delay(timeout);
-    // turn off GREEN
     digitalWrite(LED_B, LED_OFF);
     delay(timeout);
 #elif defined(BOARD_ESP32_C5)
-    // turn on GREEN
     rgbLed.setPixelColor(0, rgbLed.Color(COLOR_GREEN.r, COLOR_GREEN.g, COLOR_GREEN.b));
     rgbLed.show();
     delay(timeout);
-    // turn off GREEN
     rgbLed.setPixelColor(0, rgbLed.Color(COLOR_OFF.r, COLOR_OFF.g, COLOR_OFF.b));
     rgbLed.show();
     delay(timeout);
 #endif
 }
 
+// ── start ─────────────────────────────────────────────────────────────────────
 void LED::start()
 {
 #ifdef BOARD_WIFI_DEV
-    pinMode(4, OUTPUT); // Set Blue Pin mode as output
-    pinMode(5, OUTPUT); // Set Green Pin mode as output
-    pinMode(6, OUTPUT); // Set Red Pin mode as output
-
-    digitalWrite(4, LED_OFF); // BLUE
-    digitalWrite(6, LED_OFF); // RED
+    pinMode(4, OUTPUT);
+    pinMode(5, OUTPUT);
+    pinMode(6, OUTPUT);
+    digitalWrite(4, LED_OFF);
+    digitalWrite(6, LED_OFF);
 #elif defined(BOARD_ESP32_C6)
     rgbLed.begin();
     rgbLed.show();
 #elif defined(BOARD_ESP32_CAM)
-    pinMode(4, OUTPUT); // Set Green Pin mode as output
+    pinMode(4, OUTPUT);
 #elif defined(BOARD_ESP32_S3)
 #ifdef RGB_BUILTIN
-    digitalWrite(RGB_BUILTIN, LOW);      // Turn the RGB LED off
-    neopixelWrite(RGB_BUILTIN, 0, 0, 0); // Off / black
+    digitalWrite(RGB_BUILTIN, LOW);
+    neopixelWrite(RGB_BUILTIN, 0, 0, 0);
 #endif
 #elif defined(BOARD_ESP32_WROOM)
-    pinMode(2, OUTPUT); // Set Green Pin mode as output
+    pinMode(2, OUTPUT);
 #elif defined(BOARD_ESP32_WROVER)
-    pinMode(4, OUTPUT); // Set Blue Pin mode as output
-    pinMode(5, OUTPUT); // Set Green Pin mode as output
-    pinMode(6, OUTPUT); // Set Red Pin mode as output
-
-    digitalWrite(4, LED_OFF); // BLUE
-    digitalWrite(6, LED_OFF); // RED
-    digitalWrite(5, LED_OFF); // GREEN
+    pinMode(4, OUTPUT);
+    pinMode(5, OUTPUT);
+    pinMode(6, OUTPUT);
+    digitalWrite(4, LED_OFF);
+    digitalWrite(6, LED_OFF);
+    digitalWrite(5, LED_OFF);
 #elif defined(BOARD_PICO_W) || defined(BOARD_PICO_2W) || defined(BOARD_VGM) || defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W)
-    pinMode(LED_BUILTIN, OUTPUT); // Set Green Pin mode as output
+    pinMode(LED_BUILTIN, OUTPUT);
 #elif defined(BOARD_ESP32_C3)
-    pinMode(8, OUTPUT); // Set Green Pin mode as output
+    pinMode(8, OUTPUT);
 #elif defined(BOARD_BW16)
-    pinMode(LED_B, OUTPUT); // it says blue, but shows up as green
+    pinMode(LED_B, OUTPUT);
 #elif defined(BOARD_ESP32_C5)
     rgbLed.begin();
+    rgbLed.setBrightness(NEO_BRIGHT);
     rgbLed.show();
 #endif
+
+    // S3 and C5 play the full RGB boot sequence; all other boards do 3x green blinks.
+#if defined(BOARD_ESP32_S3) || defined(BOARD_ESP32_C5)
+    this->bootSequence();
+#else
     this->blink();
     this->blink();
     this->blink();
+#endif
 }
 
+// ── on ───────────────────────────────────────────────────────────────────────
 void LED::on()
 {
 #ifdef BOARD_WIFI_DEV
-    digitalWrite(4, LED_OFF); // BLUE
-    digitalWrite(6, LED_OFF); // RED
-    digitalWrite(5, LED_ON);  // GREEN
+    digitalWrite(4, LED_OFF);
+    digitalWrite(6, LED_OFF);
+    digitalWrite(5, LED_ON);
 #elif defined(BOARD_ESP32_C6)
     rgbLed.setPixelColor(0, rgbLed.Color(COLOR_GREEN.r, COLOR_GREEN.g, COLOR_GREEN.b));
     rgbLed.show();
 #elif defined(BOARD_ESP32_CAM)
-    digitalWrite(4, LED_ON); // GREEN
+    digitalWrite(4, LED_ON);
 #elif defined(BOARD_ESP32_S3)
 #ifdef RGB_BUILTIN
-    neopixelWrite(RGB_BUILTIN, 0, RGB_BRIGHTNESS, 0); // Green
+    neopixelWrite(RGB_BUILTIN, 0, RGB_BRIGHTNESS, 0);
 #endif
 #elif defined(BOARD_ESP32_WROOM)
-    digitalWrite(2, LED_ON); // GREEN
+    digitalWrite(2, LED_ON);
 #elif defined(BOARD_ESP32_WROVER)
-    digitalWrite(4, LED_OFF); // BLUE
-    digitalWrite(6, LED_OFF); // RED
-    digitalWrite(5, LED_ON);  // GREEN
+    digitalWrite(4, LED_OFF);
+    digitalWrite(6, LED_OFF);
+    digitalWrite(5, LED_ON);
 #elif defined(BOARD_PICO_W) || defined(BOARD_PICO_2W) || defined(BOARD_VGM) || defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W)
-    digitalWrite(LED_BUILTIN, LED_ON); // GREEN
+    digitalWrite(LED_BUILTIN, LED_ON);
 #elif defined(BOARD_ESP32_C3)
-    digitalWrite(8, LED_ON); // GREEN
+    digitalWrite(8, LED_ON);
 #elif defined(BOARD_BW16)
-    digitalWrite(LED_B, LED_ON); // GREEN
+    digitalWrite(LED_B, LED_ON);
 #elif defined(BOARD_ESP32_C5)
     rgbLed.setPixelColor(0, rgbLed.Color(COLOR_GREEN.r, COLOR_GREEN.g, COLOR_GREEN.b));
     rgbLed.show();
 #endif
 }
 
+// ── off ──────────────────────────────────────────────────────────────────────
 void LED::off()
 {
 #ifdef BOARD_WIFI_DEV
-    digitalWrite(4, LED_OFF); // BLUE
-    digitalWrite(5, LED_OFF); // GREEN
-    digitalWrite(6, LED_OFF); // RED
+    digitalWrite(4, LED_OFF);
+    digitalWrite(5, LED_OFF);
+    digitalWrite(6, LED_OFF);
 #elif defined(BOARD_ESP32_C6)
     rgbLed.setPixelColor(0, rgbLed.Color(COLOR_OFF.r, COLOR_OFF.g, COLOR_OFF.b));
     rgbLed.show();
 #elif defined(BOARD_ESP32_CAM)
-    digitalWrite(4, LED_OFF); // GREEN
+    digitalWrite(4, LED_OFF);
 #elif defined(BOARD_ESP32_S3)
 #ifdef RGB_BUILTIN
-    neopixelWrite(RGB_BUILTIN, 0, 0, 0); // Off / black
+    neopixelWrite(RGB_BUILTIN, 0, 0, 0);
 #endif
 #elif defined(BOARD_ESP32_WROOM)
-    digitalWrite(2, LED_OFF); // GREEN
+    digitalWrite(2, LED_OFF);
 #elif defined(BOARD_ESP32_WROVER)
-    digitalWrite(4, LED_OFF); // BLUE
-    digitalWrite(5, LED_OFF); // GREEN
-    digitalWrite(6, LED_OFF); // RED
+    digitalWrite(4, LED_OFF);
+    digitalWrite(5, LED_OFF);
+    digitalWrite(6, LED_OFF);
 #elif defined(BOARD_PICO_W) || defined(BOARD_PICO_2W) || defined(BOARD_VGM) || defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W)
-    digitalWrite(LED_BUILTIN, LED_OFF); // GREEN
+    digitalWrite(LED_BUILTIN, LED_OFF);
 #elif defined(BOARD_ESP32_C3)
-    digitalWrite(8, LED_OFF); // GREEN
+    digitalWrite(8, LED_OFF);
 #elif defined(BOARD_BW16)
-    digitalWrite(LED_B, LED_OFF); // GREEN
+    digitalWrite(LED_B, LED_OFF);
 #elif defined(BOARD_ESP32_C5)
     rgbLed.setPixelColor(0, rgbLed.Color(COLOR_OFF.r, COLOR_OFF.g, COLOR_OFF.b));
     rgbLed.show();
+#endif
+}
+
+// ── bootSequence ─────────────────────────────────────────────────────────────
+// Mirrors led_boot_sequence() from cyberbrick_esp32.ino.
+// Wipe R -> G -> B -> white, then three quick white blinks.
+// Always runs at boot; not gated by use_led.
+void LED::bootSequence()
+{
+#if defined(BOARD_ESP32_S3) || defined(BOARD_ESP32_C5)
+    const uint8_t seq[4][3] = {
+        {NEO_BRIGHT, 0,           0          },
+        {0,          NEO_BRIGHT,  0          },
+        {0,          0,           NEO_BRIGHT },
+        {NEO_BRIGHT, NEO_BRIGHT,  NEO_BRIGHT },
+    };
+    for (int i = 0; i < 4; i++)
+    {
+        neoSet(seq[i][0], seq[i][1], seq[i][2]);
+        delay(120);
+    }
+    for (int i = 0; i < 3; i++)
+    {
+        neoWhite(); delay(80);
+        neoOff();   delay(80);
+    }
+#endif
+}
+
+// ── activity ─────────────────────────────────────────────────────────────────
+// Cyan on — shown while a command is being processed.
+// Falls back to plain green on non-NeoPixel boards via on().
+void LED::activity()
+{
+#if defined(BOARD_ESP32_S3) || defined(BOARD_ESP32_C5)
+    neoSet(0, NEO_BRIGHT / 2, NEO_BRIGHT / 2);
+#else
+    this->on();
+#endif
+}
+
+// ── scanning ─────────────────────────────────────────────────────────────────
+void LED::scanning()
+{
+#if defined(BOARD_ESP32_S3) || defined(BOARD_ESP32_C5)
+    neoBlue();
+#endif
+}
+
+// ── connecting ───────────────────────────────────────────────────────────────
+void LED::connecting()
+{
+#if defined(BOARD_ESP32_S3) || defined(BOARD_ESP32_C5)
+    neoYellow();
+#endif
+}
+
+// ── connectedReady ───────────────────────────────────────────────────────────
+// Green on for 2 s -> off.  Called once immediately after a successful join.
+// Resets the heartbeat timer so the first pulse fires 30 s from now.
+void LED::connectedReady()
+{
+#if defined(BOARD_ESP32_S3) || defined(BOARD_ESP32_C5)
+    neoGreen();
+    delay(2000);
+    neoOff();
+    _conn_last_pulse = millis();
+    _conn_pulsing    = false;
+#endif
+}
+
+// ── connectedTick ────────────────────────────────────────────────────────────
+// Non-blocking heartbeat.  Call every loop iteration while WiFi is connected.
+// Fires a 600 ms green pulse every 30 s; LED is off between pulses.
+void LED::connectedTick()
+{
+#if defined(BOARD_ESP32_S3) || defined(BOARD_ESP32_C5)
+    uint32_t now = millis();
+    if (_conn_pulsing)
+    {
+        if (now - _conn_pulse_start >= 600)
+        {
+            _conn_pulsing = false;
+            neoOff();
+        }
+    }
+    else
+    {
+        if (now - _conn_last_pulse >= 30000)
+        {
+            _conn_last_pulse  = now;
+            _conn_pulse_start = now;
+            _conn_pulsing     = true;
+            neoGreen();
+        }
+    }
+#endif
+}
+
+// ── disconnected ─────────────────────────────────────────────────────────────
+void LED::disconnected()
+{
+#if defined(BOARD_ESP32_S3) || defined(BOARD_ESP32_C5)
+    neoRed();
+    delay(400);
+    neoOff();
+#endif
+}
+
+// ── connectFailed ────────────────────────────────────────────────────────────
+void LED::connectFailed()
+{
+#if defined(BOARD_ESP32_S3) || defined(BOARD_ESP32_C5)
+    neoRed();
+    delay(1000);
+    neoOff();
+#endif
+}
+
+// ── scanDone ─────────────────────────────────────────────────────────────────
+void LED::scanDone(bool found)
+{
+#if defined(BOARD_ESP32_S3) || defined(BOARD_ESP32_C5)
+    if (found)
+    {
+        neoYellow();
+        delay(300);
+    }
+    else
+    {
+        neoRed();
+        delay(600);
+    }
+    neoOff();
+#else
+    (void)found;
 #endif
 }
