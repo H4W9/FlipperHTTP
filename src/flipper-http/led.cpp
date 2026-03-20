@@ -59,9 +59,11 @@ static inline void neoYellow() { neoSet(NEO_BRIGHT,          NEO_BRIGHT / 2,    
 static inline void neoWhite()  { neoSet(NEO_BRIGHT,          NEO_BRIGHT,         NEO_BRIGHT ); }
 
 // State for non-blocking connectedTick()
-static uint32_t _conn_last_pulse = 0;
-static bool     _conn_pulsing    = false;
-static uint32_t _conn_pulse_start = 0;
+// Phase 0 = idle, 1 = fade-in, 2 = fade-out
+static uint32_t _conn_last_pulse  = 0;
+static uint8_t  _conn_phase       = 0;
+static uint32_t _conn_phase_start = 0;
+constexpr uint32_t FADE_HALF_MS   = 500; // each half (in + out = 1000 ms total)
 #endif // BOARD_ESP32_S3 || BOARD_ESP32_C5
 
 // ── blink ─────────────────────────────────────────────────────────────────────
@@ -312,33 +314,57 @@ void LED::connectedReady()
     delay(2000);
     neoOff();
     _conn_last_pulse = millis();
-    _conn_pulsing    = false;
+    _conn_phase      = 0;
 #endif
 }
 
 // ── connectedTick ────────────────────────────────────────────────────────────
 // Non-blocking heartbeat.  Call every loop iteration while WiFi is connected.
-// Fires a 600 ms green pulse every 30 s; LED is off between pulses.
+// Every 30 s: fade green in over FADE_HALF_MS, then fade out over FADE_HALF_MS.
+// LED is off between pulses.
 void LED::connectedTick()
 {
 #if defined(BOARD_ESP32_S3) || defined(BOARD_ESP32_C5)
-    uint32_t now = millis();
-    if (_conn_pulsing)
+    uint32_t now     = millis();
+    uint32_t elapsed = now - _conn_phase_start;
+
+    if (_conn_phase == 0)
     {
-        if (now - _conn_pulse_start >= 600)
-        {
-            _conn_pulsing = false;
-            neoOff();
-        }
-    }
-    else
-    {
+        // Idle — wait for the 30 s interval
         if (now - _conn_last_pulse >= 30000)
         {
             _conn_last_pulse  = now;
-            _conn_pulse_start = now;
-            _conn_pulsing     = true;
-            neoGreen();
+            _conn_phase_start = now;
+            _conn_phase       = 1;
+        }
+    }
+    else if (_conn_phase == 1)
+    {
+        // Fade in: brightness ramps 0 → NEO_BRIGHT over FADE_HALF_MS
+        if (elapsed >= FADE_HALF_MS)
+        {
+            neoGreen(); // ensure we hit full brightness
+            _conn_phase_start = now;
+            _conn_phase       = 2;
+        }
+        else
+        {
+            uint8_t br = (uint8_t)((uint32_t)NEO_BRIGHT * elapsed / FADE_HALF_MS);
+            neoSet(0, br, 0);
+        }
+    }
+    else // phase == 2
+    {
+        // Fade out: brightness ramps NEO_BRIGHT → 0 over FADE_HALF_MS
+        if (elapsed >= FADE_HALF_MS)
+        {
+            neoOff();
+            _conn_phase = 0;
+        }
+        else
+        {
+            uint8_t br = (uint8_t)((uint32_t)NEO_BRIGHT * (FADE_HALF_MS - elapsed) / FADE_HALF_MS);
+            neoSet(0, br, 0);
         }
     }
 #endif
