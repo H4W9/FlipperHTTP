@@ -151,63 +151,6 @@ void FlipperHTTP::setup()
     this->websocket = nullptr;
 }
 
-bool FlipperHTTP::readSerialSettings(String receivedData, bool connectAfterSave)
-{
-    JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, receivedData);
-
-    if (error)
-    {
-        this->uart->print(F("[ERROR] Failed to parse JSON: "));
-        this->uart->println(F(error.c_str()));
-        return false;
-    }
-
-    // Extract values from JSON
-    if (doc["ssid"] && doc["password"])
-    {
-        strncpy(loaded_ssid, doc["ssid"], sizeof(loaded_ssid));     // save ssid
-        strncpy(loaded_pass, doc["password"], sizeof(loaded_pass)); // save password
-    }
-    else
-    {
-        this->uart->println(F("[ERROR] JSON does not contain ssid and password."));
-        return false;
-    }
-
-    // Save to storage
-    if (!this->saveWiFi(receivedData))
-    {
-        this->uart->println(F("[ERROR] Failed to save settings to file."));
-        return false;
-    }
-
-    if (connectAfterSave)
-    {
-        if (this->wifi.isConnected())
-        {
-            this->wifi.disconnect();
-        }
-
-        // Attempt to reconnect with new settings
-        if (this->use_led) { this->led.connecting(); }
-        if (this->wifi.connect(loaded_ssid, loaded_pass))
-        {
-            if (this->use_led) { this->led.connectedReady(); }
-            this->uart->println(F("[SUCCESS] WiFi settings saved and connected."));
-            return true;
-        }
-        else
-        {
-            if (this->use_led) { this->led.connectFailed(); }
-            this->uart->println(F("[ERROR] WiFi settings saved but failed to connect."));
-            return false;
-        }
-    }
-
-    this->uart->println(F("[SUCCESS] WiFi settings saved."));
-    return true;
-}
 
 // Main loop for flipper-http.ino that handles all of the commands
 void FlipperHTTP::loop()
@@ -379,13 +322,16 @@ void FlipperHTTP::loop()
             }
 
             // Attempt to reconnect with new settings
+            if (this->use_led) { this->led.connecting(); }
             if (this->wifi.connect(loaded_ssid, loaded_pass))
             {
+                if (this->use_led) { this->led.connectedReady(); }
                 this->uart->println(F("[SUCCESS] WiFi settings saved and connected."));
                 return;
             }
             else
             {
+                if (this->use_led) { this->led.connectFailed(); }
                 this->uart->println(F("[ERROR] WiFi settings saved but failed to connect."));
                 return;
             }
