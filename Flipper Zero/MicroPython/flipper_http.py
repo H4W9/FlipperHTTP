@@ -294,6 +294,27 @@ def flipper_http_put_request_with_headers(url: str, headers: str, data: str) -> 
     return ""
 
 
+def flipper_http_patch_request_with_headers(url: str, headers: str, data: str) -> str:
+    """Send a PATCH request to the specified URL with headers and data"""
+    if url is None:
+        return ""
+    flipper_http_send_data(
+        '[PATCH/HTTP]{"url":"'
+        + url
+        + '","headers":'
+        + headers
+        + ',"payload":'
+        + data
+        + "}"
+    )
+    if "[PATCH/SUCCESS]" in flipper_http_read_data():
+        data = flipper_http_read_data(500)
+        clear_buffer()
+        return data
+    clear_buffer()
+    return ""
+
+
 def flipper_http_delete_request_with_headers(url: str, headers: str, data: str) -> str:
     """Send a DELETE request to the specified URL with headers and data"""
     if url is None:

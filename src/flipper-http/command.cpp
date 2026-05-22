@@ -30,6 +30,8 @@ String commandToString(CommandType command)
         return "[POST/HTTP]";
     case COMMAND_TYPE_PUT_HTTP:
         return "[PUT/HTTP]";
+    case COMMAND_TYPE_PATCH_HTTP:
+        return "[PATCH/HTTP]";
     case COMMAND_TYPE_DELETE_HTTP:
         return "[DELETE/HTTP]";
     case COMMAND_TYPE_GET_BYTES:
@@ -128,6 +130,10 @@ CommandType commandFromString(const String &string)
     if (string.startsWith("[PUT/HTTP]"))
     {
         return COMMAND_TYPE_PUT_HTTP;
+    }
+    if (string.startsWith("[PATCH/HTTP]"))
+    {
+        return COMMAND_TYPE_PATCH_HTTP;
     }
     if (string.startsWith("[DELETE/HTTP]"))
     {

@@ -3,7 +3,7 @@ Author: JBlanked
 Github: https://github.com/jblanked/FlipperHTTP
 Info: This library is a wrapper around the HTTPClient library and is used to communicate with the FlipperZero over serial.
 Created: 2024-09-30
-Updated: 2026-04-07
+Updated: 2026-05-21
 
 Change Log:
 - 2024-09-30: Initial commit
@@ -82,6 +82,9 @@ Change Log:
     - Replaced local WiFiClient instance with a class instance to fix WebSocket crash
     - Improved WebSocket error handling
     - Bumped version to 2.1.7
+- 2026-05-21:
+    - Added [PATCH/HTTP] command to send PATCH requests (@nozzle-1)
+    - Bumped version to 2.1.8
 
 */
 #pragma once
@@ -98,7 +101,7 @@ Change Log:
 #include <string.h>
 
 #define BAUD_RATE 115200
-#define FLIPPER_HTTP_VERSION "2.1.7"
+#define FLIPPER_HTTP_VERSION "2.1.8"
 
 class FlipperHTTP
 {

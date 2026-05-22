@@ -310,6 +310,33 @@ let fhttp = {
         this.clear_buffer(); // Clear the buffer
         return "";
     },
+    // send PATCH request with headers
+    patch_request_with_headers: function (url, headers, data) {
+        serial.write('[PATCH/HTTP]{"url":"' + url + '","headers":' + headers + ',"payload":' + data + '}');
+        let response = this.read_data(500);
+        if (response === undefined) {
+            this.clear_buffer(false); // Clear the buffer
+            return false;
+        }
+        let sresponse = this.to_string(response);
+        if (this.includes(sresponse, "[PATCH/SUCCESS]")) {
+            while (true) {
+                let line = this.read_data(500);
+                if (line === "[PATCH/END]") {
+                    break;
+                }
+                if (line !== undefined) {
+                    this.clear_buffer(false); // Clear the buffer
+                    return line;
+                }
+            }
+        }
+        else {
+            print("PATCH request failed");
+        }
+        this.clear_buffer(); // Clear the buffer
+        return "";
+    },
     // send DELETE request with headers
     delete_request_with_headers: function (url, headers, data) {
         serial.write('[DELETE/HTTP]{"url":"' + url + '","headers":' + headers + ',"payload":' + data + '}');

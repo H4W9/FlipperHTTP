@@ -54,6 +54,7 @@ extern "C"
         GET,    // GET request
         POST,   // POST request
         PUT,    // PUT request
+        PATCH,  // PATCH request
         DELETE, // DELETE request
         //
         BYTES,      // Stream bytes to file

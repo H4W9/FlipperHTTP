@@ -901,6 +901,14 @@ bool flipper_http_request(FlipperHTTP *fhttp, HTTPMethod method, const char *url
         }
         ret = snprintf(command, sizeof(command), "[PUT/HTTP]{\"url\":\"%s\",\"headers\":%s,\"payload\":%s}", url, headers, payload);
         break;
+    case PATCH:
+        if (!headers || !payload)
+        {
+            FURI_LOG_E("FlipperHTTP", "Invalid arguments provided to flipper_http_request.");
+            return false;
+        }
+        ret = snprintf(command, sizeof(command), "[PATCH/HTTP]{\"url\":\"%s\",\"headers\":%s,\"payload\":%s}", url, headers, payload);
+        break;
     case DELETE:
         if (!headers || !payload)
         {
@@ -1230,10 +1238,11 @@ static void flipper_http_rx_callback(const char *line, void *context)
     char *trimmed_line = trim(line);
     if (trimmed_line != NULL && trimmed_line[0] != '\0')
     {
-        // if the line is not [GET/END] or [POST/END] or [PUT/END] or [DELETE/END]
+        // if the line is not a request end marker
         if (strstr(trimmed_line, "[GET/END]") == NULL &&
             strstr(trimmed_line, "[POST/END]") == NULL &&
             strstr(trimmed_line, "[PUT/END]") == NULL &&
+            strstr(trimmed_line, "[PATCH/END]") == NULL &&
             strstr(trimmed_line, "[DELETE/END]") == NULL)
         {
             strncpy(fhttp->last_response, trimmed_line, RX_BUF_SIZE);
@@ -1434,6 +1443,43 @@ static void flipper_http_rx_callback(const char *line, void *context)
         return;
     }
 
+    // Check if we've started receiving data from a PATCH request
+    else if (fhttp->started_receiving && fhttp->method == PATCH)
+    {
+        // Restart the timeout timer each time new data is received
+        furi_timer_restart(fhttp->get_timeout_timer, TIMEOUT_DURATION_TICKS);
+
+        if (strstr(line, "[PATCH/END]") != NULL)
+        {
+            // FURI_LOG_I(HTTP_TAG, "PATCH request completed.");
+            furi_timer_stop(fhttp->get_timeout_timer);
+            fhttp->started_receiving = false;
+            fhttp->just_started = false;
+            fhttp->state = IDLE;
+            fhttp->save_bytes = false;
+            fhttp->is_bytes_request = false;
+            fhttp->save_received_data = false;
+            return;
+        }
+
+        if (fhttp->save_received_data &&
+            !flipper_http_append_to_file(
+                line, strlen(line), !fhttp->just_started, fhttp->file_path))
+        {
+            FURI_LOG_E(HTTP_TAG, "Failed to append data to file.");
+            fhttp->started_receiving = false;
+            fhttp->just_started = false;
+            fhttp->state = IDLE;
+            return;
+        }
+
+        if (!fhttp->just_started)
+        {
+            fhttp->just_started = true;
+        }
+        return;
+    }
+
     // Check if we've started receiving data from a DELETE request
     else if (fhttp->started_receiving && fhttp->method == DELETE)
     {
@@ -1524,6 +1570,18 @@ static void flipper_http_rx_callback(const char *line, void *context)
     else if (strstr(line, "[PUT/SUCCESS]") != NULL)
     {
         // FURI_LOG_I(HTTP_TAG, "PUT request succeeded.");
+        furi_timer_start(fhttp->get_timeout_timer, TIMEOUT_DURATION_TICKS);
+
+        fhttp->started_receiving = true;
+        fhttp->state = RECEIVING;
+
+        // set header
+        set_header(fhttp);
+        return;
+    }
+    else if (strstr(line, "[PATCH/SUCCESS]") != NULL)
+    {
+        // FURI_LOG_I(HTTP_TAG, "PATCH request succeeded.");
         furi_timer_start(fhttp->get_timeout_timer, TIMEOUT_DURATION_TICKS);
 
         fhttp->started_receiving = true;

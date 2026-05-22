@@ -3,7 +3,7 @@ Author: JBlanked
 Github: https://github.com/jblanked/FlipperHTTP
 Info: This library is a wrapper around the HTTPClient library and is used to communicate with the FlipperZero over serial.
 Created: 2024-09-30
-Updated: 2026-04-07
+Updated: 2026-05-21
 */
 
 #include "FlipperHTTP.hpp"
@@ -219,7 +219,7 @@ void FlipperHTTP::loop()
         switch (commandType)
         {
         case COMMAND_TYPE_LIST:
-            this->uart->println(F("[LIST], [PING], [REBOOT], [WIFI/IP], [WIFI/SCAN], [WIFI/SAVE], [WIFI/CONNECT], [WIFI/DISCONNECT], [WIFI/LIST], [GET], [GET/HTTP], [POST/HTTP], [PUT/HTTP], [DELETE/HTTP], [GET/BYTES], [POST/BYTES], [POST/FILE], [PARSE], [PARSE/ARRAY], [LED/ON], [LED/OFF], [IP/ADDRESS], [WIFI/AP], [VERSION], [DEAUTH], [WIFI/STATUS], [WIFI/SSID], [BOARD/NAME]"));
+            this->uart->println(F("[LIST], [PING], [REBOOT], [WIFI/IP], [WIFI/SCAN], [WIFI/SAVE], [WIFI/CONNECT], [WIFI/DISCONNECT], [WIFI/LIST], [GET], [GET/HTTP], [POST/HTTP], [PUT/HTTP], [PATCH/HTTP], [DELETE/HTTP], [GET/BYTES], [POST/BYTES], [POST/FILE], [PARSE], [PARSE/ARRAY], [LED/ON], [LED/OFF], [IP/ADDRESS], [WIFI/AP], [VERSION], [DEAUTH], [WIFI/STATUS], [WIFI/SSID], [BOARD/NAME]"));
             break;
         case COMMAND_TYPE_PING:
             this->uart->println("[PONG]");
@@ -609,6 +609,66 @@ void FlipperHTTP::loop()
             else
             {
                 this->uart->println(F("[ERROR] PUT request failed or returned empty data."));
+            }
+            break;
+        }
+        case COMMAND_TYPE_PATCH_HTTP:
+        {
+            if (!this->wifi.isConnected() && !this->wifi.connect(loaded_ssid, loaded_pass))
+            {
+                this->uart->println(F("[ERROR] Not connected to Wifi. Failed to reconnect."));
+                this->led.off();
+                return;
+            }
+
+            String jsonData = _data.substring(strlen("[PATCH/HTTP]"));
+            jsonData.trim();
+
+            JsonDocument doc;
+            DeserializationError error = deserializeJson(doc, jsonData);
+
+            if (error)
+            {
+                this->uart->print(F("[ERROR] Failed to parse JSON."));
+                this->led.off();
+                return;
+            }
+
+            if (!doc["url"] || !doc["payload"])
+            {
+                this->uart->println(F("[ERROR] JSON does not contain url or payload."));
+                this->led.off();
+                return;
+            }
+            String url = doc["url"];
+            String payload = doc["payload"];
+
+            const char *headerKeys[10];
+            const char *headerValues[10];
+            int headerSize = 0;
+
+            if (doc["headers"])
+            {
+                JsonObject headers = doc["headers"];
+                for (JsonPair header : headers)
+                {
+                    headerKeys[headerSize] = header.key().c_str();
+                    headerValues[headerSize] = header.value();
+                    headerSize++;
+                }
+            }
+
+            String patchData = this->http->request("PATCH", url, payload, headerKeys, headerValues, headerSize);
+            if (patchData != "")
+            {
+                this->uart->println(patchData);
+                this->uart->flush();
+                this->uart->println();
+                this->uart->println(F("[PATCH/END]"));
+            }
+            else
+            {
+                this->uart->println(F("[ERROR] PATCH request failed or returned empty data."));
             }
             break;
         }
