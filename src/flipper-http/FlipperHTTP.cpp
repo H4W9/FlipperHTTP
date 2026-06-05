@@ -28,28 +28,32 @@ bool FlipperHTTP::loadWiFi()
     }
 
     // Try to connect to saved index first
+    // Note: LED calls here are unconditional — state.ledState is now loaded from storage
+    this->led.connecting();
     if (this->wifi.connect(this->state.networks[this->state.networkCurrent].ssid, this->state.networks[this->state.networkCurrent].pass))
     {
         char message[128];
         snprintf(message, sizeof(message), "WiFi connected to %s", this->state.networks[this->state.networkCurrent].ssid);
         this->uart->println(message);
+        if (this->state.ledState) { this->led.connectedReady(); } else { this->led.off(); }
         return true;
     }
+    this->led.connectFailed();
 
     // Try others
     for (uint8_t i = 0; i < this->state.networkCount; i++)
     {
-        if (this->state.ledState) { this->led.connecting(); }
+        this->led.connecting();
         if (this->wifi.connect(this->state.networks[i].ssid, this->state.networks[i].pass))
         {
             this->state.networkCurrent = i;
             char message[128];
             snprintf(message, sizeof(message), "WiFi connected to %s", this->state.networks[this->state.networkCurrent].ssid);
             this->uart->println(message);
-            if (this->state.ledState) { this->led.connectedReady(); }
+            if (this->state.ledState) { this->led.connectedReady(); } else { this->led.off(); }
             return true;
         }
-        if (this->state.ledState) { this->led.connectFailed(); }
+        this->led.connectFailed();
     }
 
     this->uart->println(F("[ERROR] Failed to connect to any WiFi network."));
@@ -98,6 +102,7 @@ void FlipperHTTP::setup()
     this->uart_2->setTimeout(5000);
     this->uart_2->flush();
 #endif
+    this->led.start();
     if (!storage.begin())
     {
         this->uart->println(F("[ERROR] Storage initialization failed."));
@@ -108,7 +113,6 @@ void FlipperHTTP::setup()
     }
     this->http = new HTTP(this->uart, &this->client);
     this->websocket = nullptr;
-    this->led.start();
     this->uart->flush();
     this->led.off();
 }
