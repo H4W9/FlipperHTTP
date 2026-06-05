@@ -9,12 +9,28 @@
 #endif
 #include <ArduinoJson.h>
 
+typedef struct
+{
+    char ssid[64];
+    char pass[64];
+} network_t;
+
+typedef struct
+{
+    uint8_t networkCount;
+    uint8_t networkCurrent;
+    network_t networks[32];
+    uint8_t ledState;
+} state_t;
+
 class StorageManager
 {
 public:
     bool begin();
     bool deserialize(JsonDocument &doc, const char *filename);
     String read(const char *filename);
+    bool read(const char *filename, state_t &state);
     bool serialize(JsonDocument &doc, const char *filename);
     bool write(const char *filename, const char *data);
+    bool write(const char *filename, const state_t &state);
 };

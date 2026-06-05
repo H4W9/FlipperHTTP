@@ -8,7 +8,7 @@ class UART
 public:
     UART()
     {
-#if defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W)
+#if defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W) || defined(BOARD_CARDPUTER)
         // Initialize LCD for PicoCalc display
         this->lcd = new LCD();
         if (this->lcd)
@@ -41,7 +41,7 @@ private:
     uint8_t rx_pin;
     uint8_t tx_pin;
 #endif
-#if defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W)
-    LCD *lcd; // LCD for PicoCalc display
+#if defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W) || defined(BOARD_CARDPUTER)
+    LCD *lcd; // LCD for PicoCalc/Cardputer display
 #endif
 };

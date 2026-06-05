@@ -24,6 +24,8 @@ void UART::begin(uint32_t baudrate)
     this->serial->begin(baudrate);
 #elif defined(BOARD_BW16)
     Serial1.begin(baudrate);
+#elif defined(BOARD_CARDPUTER)
+    Serial.begin(baudrate, SERIAL_8N1, 1, 2);
 #else
     Serial.begin(baudrate);
 #endif
@@ -82,7 +84,7 @@ void UART::println(String str)
 #else
     Serial.println(str);
 #endif
-#if defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W)
+#if defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W) || defined(BOARD_CARDPUTER)
     if (this->lcd)
     {
         this->lcd->text(0, 0, str.c_str());
@@ -156,7 +158,6 @@ String UART::readSerialLine()
         receivedData += incomingChar;
         delay(1); // Minimal delay to allow buffer to fill
     }
-#else
     while (Serial.available() > 0)
     {
         char incomingChar = Serial.read();
@@ -167,9 +168,11 @@ String UART::readSerialLine()
         receivedData += incomingChar;
         delay(1); // Minimal delay to allow buffer to fill
     }
+#else
+    receivedData = Serial.readStringUntil('\n');
 #endif
     receivedData.trim();
-#if defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W)
+#if defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W) || defined(BOARD_CARDPUTER)
     if (this->lcd)
     {
         if (receivedData.length() > 1)

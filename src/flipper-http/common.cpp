@@ -32,6 +32,8 @@ const char *commonGetBoardName()
     return "PicoCalc W";
 #elif defined(BOARD_PICOCALC_2W)
     return "PicoCalc 2W";
+#elif defined(BOARD_CARDPUTER)
+    return "Cardputer ADV";
 #else
     return "Unknown Board";
 #endif

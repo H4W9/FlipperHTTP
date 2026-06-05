@@ -3,7 +3,7 @@ Author: JBlanked
 Github: https://github.com/jblanked/FlipperHTTP
 Info: This library is a wrapper around the HTTPClient library and is used to communicate with the FlipperZero over serial.
 Created: 2024-09-30
-Updated: 2026-05-21
+Updated: 2026-06-04
 
 Change Log:
 - 2024-09-30: Initial commit
@@ -85,7 +85,13 @@ Change Log:
 - 2026-05-21:
     - Added [PATCH/HTTP] command to send PATCH requests (@nozzle-1)
     - Bumped version to 2.1.8
-
+- 2026-06-04:
+    - Added support for the Cardputer-ADV
+    - Replaced JSON settings with a struct
+    - Updated storage to read and write the struct instead of JSON
+    - Updated `setup` to do the LED sequence after initializing drivers, loading settings, and attempting to connect to WiFi
+    - Updated arduino-pico package to 5.6.0
+    - Bumped version to 2.2.0
 */
 #pragma once
 #include "certs.hpp"
@@ -101,7 +107,7 @@ Change Log:
 #include <string.h>
 
 #define BAUD_RATE 115200
-#define FLIPPER_HTTP_VERSION "2.1.8"
+#define FLIPPER_HTTP_VERSION "2.2.0"
 
 class FlipperHTTP
 {
@@ -111,14 +117,12 @@ public:
     {
     }
 
-    bool loadWiFi();            // Load Wifi settings from storage
-    bool saveWiFi(String data); // Save and Load settings to and from storage
-    void setup();               // Arduino setup function
-    void loop();                // Main loop for flipper-http.ino that handles all of the commands
+    bool loadWiFi();                                             // Load Wifi settings from storage
+    bool saveWiFi(const char *newSSID, const char *newPassword); // Save and Load settings to and from storage
+    void setup();                                                // Arduino setup function
+    void loop();                                                 // Main loop for flipper-http.ino that handles all of the commands
 private:
-    char loaded_ssid[64] = {0}; // Variable to store SSID
-    char loaded_pass[64] = {0}; // Variable to store password
-    bool use_led = true;        // Variable to control LED usage
+    state_t state; // device state struct to hold wifi settings and LED state
 #ifndef BOARD_BW16
     WiFiClientSecure client; // WiFiClientSecure object for secure connections
 #else
@@ -138,5 +142,4 @@ private:
     WebSocket *websocket;   // WebSocket object to handle WebSocket connections
 };
 
-const PROGMEM char settingsFilePath[] = "/flipper-http.json"; // Path to the settings file in the SPIFFS file system
-const PROGMEM char ledStateFilePath[] = "/led.txt";           // Path to the LED state file in the SPIFFS file system
+const PROGMEM char settingsFilePath[] = "/settings.fhttp"; // Path to the settings file in the SPIFFS file system

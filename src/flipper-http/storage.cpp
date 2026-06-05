@@ -78,6 +78,28 @@ String StorageManager::read(const char *filename)
     return fileContent;
 }
 
+bool StorageManager::read(const char *filename, state_t &state)
+{
+    size_t bytesRead = 0;
+#if defined(BOARD_PICO_W) || defined(BOARD_PICO_2W) || defined(BOARD_VGM) || defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W)
+    File file = LittleFS.open(filename, "rb");
+#elif !defined(BOARD_BW16)
+    File file = SPIFFS.open(filename, "rb");
+#endif
+#ifndef BOARD_BW16
+    if (file)
+    {
+        bytesRead = file.readBytes((char *)&state, sizeof(state_t));
+        file.close();
+    }
+#else
+    /*We will keep all data at the same address and overwrite for now*/
+    UNUSED(filename);
+    FlashStorage.get(0, (uint8_t *)&state);
+#endif
+    return bytesRead == sizeof(state_t);
+}
+
 bool StorageManager::serialize(JsonDocument &doc, const char *filename)
 {
 #if defined(BOARD_PICO_W) || defined(BOARD_PICO_2W) || defined(BOARD_VGM) || defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W)
@@ -124,6 +146,30 @@ bool StorageManager::write(const char *filename, const char *data)
     /*We will keep all data at the same address and overwrite for now*/
     UNUSED(filename);
     FlashStorage.put(0, data);
+    return true;
+#endif
+}
+
+bool StorageManager::write(const char *filename, const state_t &state)
+{
+#if defined(BOARD_PICO_W) || defined(BOARD_PICO_2W) || defined(BOARD_VGM) || defined(BOARD_PICOCALC_W) || defined(BOARD_PICOCALC_2W)
+    File file = LittleFS.open(filename, "wb");
+#elif !defined(BOARD_BW16)
+    File file = SPIFFS.open(filename, "wb");
+#endif
+
+#ifndef BOARD_BW16
+    if (file)
+    {
+        file.write((const uint8_t *)&state, sizeof(state_t));
+        file.close();
+        return true;
+    }
+    return false;
+#else
+    /*We will keep all data at the same address and overwrite for now*/
+    UNUSED(filename);
+    FlashStorage.put(0, (const uint8_t *)&state);
     return true;
 #endif
 }

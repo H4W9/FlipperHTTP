@@ -57,6 +57,8 @@ The FlipperHTTP firmware supports eight boards. Instructions for each board can 
 - **ESP32-WROOM:** [https://github.com/jblanked/FlipperHTTP/tree/main/ESP32-WROOM](https://github.com/jblanked/FlipperHTTP/tree/main/ESP32-WROOM)
 - **ESP32-WROVER:** [https://github.com/jblanked/FlipperHTTP/tree/main/ESP32-WROVER](https://github.com/jblanked/FlipperHTTP/tree/main/ESP32-WROVER)
 - **BW16:** [https://github.com/jblanked/FlipperHTTP/tree/main/BW16](https://github.com/jblanked/FlipperHTTP/tree/main/BW16)
+- **PicoCalc:** [https://github.com/jblanked/FlipperHTTP/tree/main/PicoCalc](https://github.com/jblanked/FlipperHTTP/tree/main/PicoCalc)
+- **Cardputer-ADV:** [https://github.com/jblanked/FlipperHTTP/tree/main/Cardputer-ADV](https://github.com/jblanked/FlipperHTTP/tree/main/Cardputer-ADV)
 
 
 ## Wiring
@@ -107,6 +109,16 @@ BW16 -> Flipper
 - SERIAL1_TX (PB1 - Pin 4) -> Pin 14 (RX)
 - SERIAL1_RX (PB2 - Pin 5) -> Pin 13 (TX)
 - 3v3 -> Pin 9 (3v3)
+- GND -> Pin 11 (GND)
+
+PicoCalc -> Flipper
+- TX (GPIO 4) -> Pin 14 (RX)
+- RX (GPIO 5) -> Pin 13 (TX)
+- GND -> Pin 11 (GND)
+
+Cardputer-ADV (using the side port) -> Flipper
+- TX (GP2) -> Pin 14 (RX)
+- RX (GP1) -> Pin 13 (TX)
 - GND -> Pin 11 (GND)
 
 ## Video Game Module Wiring

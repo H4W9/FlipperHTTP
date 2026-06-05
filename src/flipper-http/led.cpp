@@ -1,6 +1,6 @@
 #include "led.hpp"
 
-#if defined(BOARD_ESP32_C6) || defined(BOARD_ESP32_C3) || defined(BOARD_ESP32_C5)
+#if defined(BOARD_ESP32_C6) || defined(BOARD_ESP32_C3) || defined(BOARD_ESP32_C5) || defined(BOARD_CARDPUTER)
 #include <Adafruit_NeoPixel.h>
 #if defined(BOARD_ESP32_C6)
 constexpr uint8_t LED_PIN = 10;
@@ -8,6 +8,8 @@ constexpr uint8_t LED_PIN = 10;
 constexpr uint8_t LED_PIN = 8;
 #elif defined(BOARD_ESP32_C5)
 constexpr uint8_t LED_PIN = 27;
+#elif defined(BOARD_CARDPUTER)
+constexpr uint8_t LED_PIN = 21;
 #endif
 constexpr uint8_t NUM_LEDS = 1;
 
@@ -30,7 +32,7 @@ constexpr RGB COLOR_GREEN = {0, 255, 0};
 #define LED_OFF HIGH
 #endif
 
-#if defined(BOARD_ESP32_C6) || defined(BOARD_ESP32_C5)
+#if defined(BOARD_ESP32_C6) || defined(BOARD_ESP32_C5) || defined(BOARD_CARDPUTER)
 Adafruit_NeoPixel rgbLed(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 #endif
 
@@ -129,6 +131,15 @@ void LED::blink(int timeout)
     rgbLed.setPixelColor(0, rgbLed.Color(COLOR_OFF.r, COLOR_OFF.g, COLOR_OFF.b));
     rgbLed.show();
     delay(timeout);
+#elif defined(BOARD_CARDPUTER)
+    // turn on GREEN
+    rgbLed.setPixelColor(0, rgbLed.Color(COLOR_GREEN.r, COLOR_GREEN.g, COLOR_GREEN.b));
+    rgbLed.show();
+    delay(timeout);
+    // turn off GREEN
+    rgbLed.setPixelColor(0, rgbLed.Color(COLOR_OFF.r, COLOR_OFF.g, COLOR_OFF.b));
+    rgbLed.show();
+    delay(timeout);
 #endif
 }
 
@@ -169,6 +180,9 @@ void LED::start()
 #elif defined(BOARD_ESP32_C5)
     rgbLed.begin();
     rgbLed.setBrightness(NEO_BRIGHT);
+    rgbLed.show();
+#elif defined(BOARD_CARDPUTER)
+    rgbLed.begin();
     rgbLed.show();
 #endif
 
@@ -213,6 +227,9 @@ void LED::on()
 #elif defined(BOARD_ESP32_C5)
     rgbLed.setPixelColor(0, rgbLed.Color(COLOR_GREEN.r, COLOR_GREEN.g, COLOR_GREEN.b));
     rgbLed.show();
+#elif defined(BOARD_CARDPUTER)
+    rgbLed.setPixelColor(0, rgbLed.Color(COLOR_GREEN.r, COLOR_GREEN.g, COLOR_GREEN.b));
+    rgbLed.show();
 #endif
 }
 
@@ -245,6 +262,9 @@ void LED::off()
 #elif defined(BOARD_BW16)
     digitalWrite(LED_B, LED_OFF);
 #elif defined(BOARD_ESP32_C5)
+    rgbLed.setPixelColor(0, rgbLed.Color(COLOR_OFF.r, COLOR_OFF.g, COLOR_OFF.b));
+    rgbLed.show();
+#elif defined(BOARD_CARDPUTER)
     rgbLed.setPixelColor(0, rgbLed.Color(COLOR_OFF.r, COLOR_OFF.g, COLOR_OFF.b));
     rgbLed.show();
 #endif

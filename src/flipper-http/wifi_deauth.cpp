@@ -3,7 +3,7 @@
 #include "wifi_utils.hpp"
 #include <string.h>
 static bool isRunning = false;
-#if defined(BOARD_WIFI_DEV) || defined(BOARD_ESP32_C6) || defined(BOARD_ESP32_CAM) || defined(BOARD_ESP32_S3) || defined(BOARD_ESP32_WROOM) || defined(BOARD_ESP32_WROVER) || defined(BOARD_ESP32_C3) || defined(BOARD_ESP32_C5)
+#if defined(BOARD_WIFI_DEV) || defined(BOARD_ESP32_C6) || defined(BOARD_ESP32_CAM) || defined(BOARD_ESP32_S3) || defined(BOARD_ESP32_WROOM) || defined(BOARD_ESP32_WROVER) || defined(BOARD_ESP32_C3) || defined(BOARD_ESP32_C5) || defined(BOARD_CARDPUTER)
 #define BOARD_ESP32
 #include <esp_wifi.h>
 static void deauthESP(const uint8_t *bssid, const uint8_t *sta)

@@ -52,6 +52,7 @@ compile_board "compile_esp32_cam.sh" "ESP32-Cam"
 compile_board "compile_esp32_s3.sh" "ESP32-S3"
 compile_board "compile_esp32_wroom.sh" "ESP32-WROOM"
 compile_board "compile_esp32_wrover.sh" "ESP32-WROVER"
+compile_board "compile_cardputer.sh" "Cardputer-ADV"
 
 # Compile all Raspberry Pi Pico boards
 compile_board "compile_pico_w.sh" "Raspberry Pi Pico W"

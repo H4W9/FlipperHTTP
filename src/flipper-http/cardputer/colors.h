@@ -1,0 +1,74 @@
+#pragma once
+
+#ifndef LCD_COLOR_RGB332
+#define LCD_COLOR_RGB332(red, green, blue) \
+    (uint8_t)(((red) & 0xE0U) | (((green) & 0xE0U) >> 3U) | (((blue) & 0xC0U) >> 6U))
+#endif
+
+#ifndef COLOR_WHITE
+#define COLOR_WHITE LCD_COLOR_RGB332(0xFFU, 0xFFU, 0xFFU)
+#endif
+
+#ifndef COLOR_BLACK
+#define COLOR_BLACK LCD_COLOR_RGB332(0x00U, 0x00U, 0x00U)
+#endif
+
+#ifndef COLOR_BLUE
+#define COLOR_BLUE LCD_COLOR_RGB332(0x00U, 0x00U, 0xFFU)
+#endif
+
+#ifndef COLOR_CYAN
+#define COLOR_CYAN LCD_COLOR_RGB332(0x00U, 0xFFU, 0xFFU)
+#endif
+
+#ifndef COLOR_RED
+#define COLOR_RED LCD_COLOR_RGB332(0xFFU, 0x00U, 0x00U)
+#endif
+
+#ifndef COLOR_LIGHTGREY
+#define COLOR_LIGHTGREY LCD_COLOR_RGB332(0xD0U, 0xD0U, 0xD0U)
+#endif
+
+#ifndef COLOR_DARKGREY
+#define COLOR_DARKGREY LCD_COLOR_RGB332(0x80U, 0x80U, 0x80U)
+#endif
+
+#ifndef COLOR_GREEN
+#define COLOR_GREEN LCD_COLOR_RGB332(0x00U, 0xFFU, 0x00U)
+#endif
+
+#ifndef COLOR_DARKCYAN
+#define COLOR_DARKCYAN LCD_COLOR_RGB332(0x00U, 0x80U, 0x80U)
+#endif
+
+#ifndef COLOR_DARKGREEN
+#define COLOR_DARKGREEN LCD_COLOR_RGB332(0x00U, 0x80U, 0x00U)
+#endif
+
+#ifndef COLOR_SKYBLUE
+#define COLOR_SKYBLUE LCD_COLOR_RGB332(0x80U, 0xC0U, 0xFFU)
+#endif
+
+#ifndef COLOR_VIOLET
+#define COLOR_VIOLET LCD_COLOR_RGB332(0x80U, 0x00U, 0xFFU)
+#endif
+
+#ifndef COLOR_BROWN
+#define COLOR_BROWN LCD_COLOR_RGB332(0x80U, 0x40U, 0x00U)
+#endif
+
+#ifndef COLOR_TRANSPARENT
+#define COLOR_TRANSPARENT LCD_COLOR_RGB332(0x00U, 0x00U, 0x00U)
+#endif
+
+#ifndef COLOR_YELLOW
+#define COLOR_YELLOW LCD_COLOR_RGB332(0xFFU, 0xFFU, 0x00U)
+#endif
+
+#ifndef COLOR_ORANGE
+#define COLOR_ORANGE LCD_COLOR_RGB332(0xFFU, 0xA0U, 0x00U)
+#endif
+
+#ifndef COLOR_PINK
+#define COLOR_PINK LCD_COLOR_RGB332(0xFFU, 0x80U, 0xC0U)
+#endif
