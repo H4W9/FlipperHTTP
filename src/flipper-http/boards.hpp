@@ -9,7 +9,7 @@
 // #define BOARD_WIFI_DEV 0     // ESP32S2 Dev Module            esp32 by Espressif Systems
 // #define BOARD_ESP32_C6 1     // ESP32C6 Dev Module            esp32 by Espressif Systems
 // #define BOARD_ESP32_CAM 2    // ESP32-WROOM-DA Module         esp32 by Espressif Systems
-// #define BOARD_ESP32_S3 3     // ESP32S3 Dev Module            esp32 by Espressif Systems
+ #define BOARD_ESP32_S3 3     // ESP32S3 Dev Module            esp32 by Espressif Systems
 // #define BOARD_ESP32_WROOM 4  // ESP32 Dev Module              esp32 by Espressif Systems
 // #define BOARD_ESP32_WROVER 5 // ESP32 Wrover Module           esp32 by Espressif Systems
 // #define BOARD_PICO_W 6       // Raspberry Pi Pico W           Raspberry Pi Pico/RP2040/RP2350 by Earl Philhower
